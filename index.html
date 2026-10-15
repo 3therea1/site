@@ -152,6 +152,7 @@
     const LAV = [140, 154, 216];
     const CREAM = [246, 245, 232];
     const HAZE = [200, 208, 236];
+    const ROOT = [158, 168, 216];
     const touch = matchMedia("(pointer: coarse)").matches;
 
     let w;
@@ -211,6 +212,7 @@
       const cx = Math.round(w * 0.665);
       const cy = Math.round(h * 0.33);
       const glowR = Math.min(w, h) * 0.32;
+      const fadeH = touch ? h * 0.12 : 0;
       const d0f = Math.sqrt(10 / (h - cy));
       const d0w = Math.sqrt(10 / cx);
 
@@ -241,6 +243,12 @@
             const glow = Math.min(1, Math.exp(-dist / glowR) * 1.15);
 
             color = mix(LAV, CREAM, glow).map((value) => value + grain * 18);
+          }
+
+          const fade = Math.max(0, (y - (h - fadeH)) / fadeH);
+
+          if (fade > 0) {
+            color = mix(color, ROOT, fade * fade);
           }
 
           data[i] = color[0];
