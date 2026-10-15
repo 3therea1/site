@@ -93,6 +93,34 @@
         font-size: 17px;
       }
     }
+
+    @media (pointer: coarse) {
+      html {
+        overscroll-behavior: none;
+      }
+
+      html,
+      body {
+        height: auto;
+      }
+
+      body {
+        position: relative;
+        min-height: calc(100lvh + 62px);
+        overflow: visible;
+      }
+
+      .tl,
+      .tr {
+        top: calc(62px + env(safe-area-inset-top));
+      }
+
+      .br {
+        top: calc(62px + 100svh - env(safe-area-inset-bottom));
+        bottom: auto;
+        transform: translateY(-100%);
+      }
+    }
   </style>
 </head>
 <body>
@@ -246,6 +274,11 @@
 
     size();
     draw(0);
+
+    if (touch) {
+      scrollTo(0, 62);
+      addEventListener("pageshow", () => scrollTo(0, 62));
+    }
 
     addEventListener("resize", () => {
       size();
