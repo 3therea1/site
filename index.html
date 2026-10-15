@@ -1,0 +1,250 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>home · 3therea1</title>
+  <meta name="description" content="3therea1. kiokuya and ajito.">
+  <meta name="theme-color" content="#9ea8d8">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' fill='%233e62aa'/%3E%3Cpath d='M8 2v12M2 8h12M4 4l8 8M12 4l-8 8' stroke='%23f2f5ff' stroke-width='1.2'/%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@400;500&display=swap" rel="stylesheet">
+
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+    }
+
+    html,
+    body {
+      height: 100%;
+    }
+
+    body {
+      background: #9ea8d8;
+      color: #27356f;
+      font: 400 17px/1.6 "Shippori Mincho", serif;
+      letter-spacing: 0.04em;
+      overflow: hidden;
+    }
+
+    a {
+      color: inherit;
+    }
+
+    a:focus-visible {
+      outline: 2px solid currentColor;
+      outline-offset: 3px;
+    }
+
+    canvas {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      image-rendering: pixelated;
+    }
+
+    .c {
+      position: fixed;
+      padding: 28px 34px;
+    }
+
+    .tl {
+      top: 0;
+      left: 0;
+    }
+
+    .tr {
+      top: 0;
+      right: 0;
+      text-align: right;
+    }
+
+    .br {
+      bottom: 0;
+      right: 0;
+      text-align: right;
+      font-size: 20px;
+      letter-spacing: 0.3em;
+    }
+
+    .sr {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+    }
+
+    @media (max-width: 640px) {
+      body {
+        font-size: 15px;
+      }
+
+      .c {
+        padding: 18px;
+      }
+
+      .br {
+        font-size: 17px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <canvas id="c" aria-hidden="true"></canvas>
+
+  <h1 class="sr">3therea1</h1>
+
+  <div class="c tl">
+    <a href="https://github.com/3therea1">3therea1</a><br>
+    <a href="https://blog.3therea1.dev">blog</a>
+  </div>
+
+  <div class="c tr">
+    <a href="https://github.com/kiokuya-app">kiokuya</a><br>
+    <a href="https://github.com/ajito-app">ajito</a>
+  </div>
+
+  <div class="c br" lang="ja">海のかけら</div>
+
+  <script>
+    const cv = document.getElementById("c");
+    const ctx = cv.getContext("2d");
+    const S = 2;
+
+    const DEEP = [30, 46, 104];
+    const BLUE = [62, 98, 170];
+    const MID = [104, 140, 206];
+    const FOAM = [152, 184, 232];
+    const LAV = [140, 154, 216];
+    const CREAM = [246, 245, 232];
+    const HAZE = [200, 208, 236];
+
+    let w;
+    let h;
+    let img;
+
+    function mix(a, b, t) {
+      return a.map((value, k) => value + (b[k] - value) * t);
+    }
+
+    function size() {
+      w = cv.width = Math.ceil(innerWidth / S);
+      h = cv.height = Math.ceil(innerHeight / S);
+      img = ctx.createImageData(w, h);
+    }
+
+    function hash(x, y) {
+      let n = (x * 374761393 + y * 668265263) | 0;
+      n = Math.imul(n ^ (n >>> 13), 1274126177);
+
+      return ((n ^ (n >>> 16)) >>> 0) / 4294967296;
+    }
+
+    function noise(x, y) {
+      const xi = Math.floor(x);
+      const yi = Math.floor(y);
+      const smooth = (t) => t * t * (3 - 2 * t);
+      const u = smooth(x - xi);
+      const v = smooth(y - yi);
+
+      const a = hash(xi, yi);
+      const b = hash(xi + 1, yi);
+      const c = hash(xi, yi + 1);
+      const d = hash(xi + 1, yi + 1);
+
+      return (a + (b - a) * u) * (1 - v) + (c + (d - c) * u) * v;
+    }
+
+    function sea(u, depth, t, d0) {
+      const z = depth >= d0 ? 1 / depth : 1 / d0 + (d0 - depth) / (d0 * d0);
+      const px = u * z * 3;
+      const pz = z * 2 + t * 0.0006;
+
+      return Math.sin(pz * 6 + noise(px, pz) * 5) * 0.5 + noise(px * 3, pz * 4 - t * 0.0004) * 0.6 + depth * 0.4;
+    }
+
+    function seaColor(value) {
+      if (value > 1.05) return FOAM;
+      if (value > 0.65) return MID;
+      if (value > 0.2) return BLUE;
+
+      return DEEP;
+    }
+
+    function draw(t) {
+      const data = img.data;
+      const cx = Math.round(w * 0.665);
+      const cy = Math.round(h * 0.33);
+      const glowR = Math.min(w, h) * 0.32;
+      const d0f = Math.sqrt(10 / (h - cy));
+      const d0w = Math.sqrt(10 / cx);
+
+      for (let y = 0, i = 0; y < h; y++) {
+        for (let x = 0; x < w; x++, i += 4) {
+          const grain = (Math.random() - 0.5) * 0.45;
+          let color;
+
+          if (x < cx && y > cy) {
+            const u = x / cx;
+            const v = (y - cy) / (h - cy);
+            const flat = u + v < 1;
+            const value = (flat ? sea(u, v, t, d0f) : sea(1 - v, 1 - u, t, d0w) - 0.08) + grain;
+            const haze = Math.max(0, 1 - (flat ? v : 1 - u) / 0.22);
+
+            color = mix(seaColor(value), HAZE, haze * haze * 0.9);
+          } else {
+            let dist;
+
+            if (x <= cx) {
+              dist = cy - y;
+            } else if (y >= cy) {
+              dist = x - cx;
+            } else {
+              dist = Math.hypot(x - cx, cy - y);
+            }
+
+            const glow = Math.min(1, Math.exp(-dist / glowR) * 1.15);
+
+            color = mix(LAV, CREAM, glow).map((value) => value + grain * 18);
+          }
+
+          data[i] = color[0];
+          data[i + 1] = color[1];
+          data[i + 2] = color[2];
+          data[i + 3] = 255;
+        }
+      }
+
+      ctx.putImageData(img, 0, 0);
+    }
+
+    let last = 0;
+
+    function loop(t) {
+      if (t - last > 70) {
+        draw(t);
+        last = t;
+      }
+
+      requestAnimationFrame(loop);
+    }
+
+    size();
+    draw(0);
+
+    addEventListener("resize", () => {
+      size();
+      draw(performance.now());
+    });
+
+    if (!matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      requestAnimationFrame(loop);
+    }
+  </script>
+</body>
+</html>
